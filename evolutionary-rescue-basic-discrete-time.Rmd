@@ -1,0 +1,178 @@
+---
+title: "Basic model of evolutionary rescue in discrete time"
+author: "Claudia Bank"
+date: "2025-10-14"
+output:
+  html_document:
+    df_print: paged
+---
+
+This notebook is meant to introduce you to simulations and calculations using R. In the following, we will simulate the evolutionary rescue model introduced in the lecture.
+
+## Your tasks
+
+Read through the code and execute it (using the "play" or "run" or "knit/preview" buttons - you might have to install some extra packages for the latter). Then "tackle" the following questions: 
+
+* Do you understand what each line means? Which lines are (particularly) confusing?
+* Check out the questions following each code block and try to answer them.
+
+## Troubleshooting
+
+1. If it all looks very confusing right now and you cannot answer any of the questions, do not despair! We will go through everything step by step during the practical and you will soon become familiar with such code. Note that we do **not** expect you to be able to answer all these questions today!
+2. If you cannot execute the code at all, tell us as soon as you can, so we can try to fix this together. Everyone should be able to run the code on their computer - it's not sufficient to peak onto your neighbor's screen.
+3. A great tool to understand what a line of code does is to print the output line by line, using the `print()` command. Be aware that in long loops this can create quite a mess of output.
+
+***
+
+## Simulating evolutionary rescue in discrete time
+
+In this notebook, we are implementing simulations of evolutionary rescue by a single mutation in discrete time, as discussed and analyzed in the work by Orr & Unckless. The model is as follows: a haploid population starts with a given number of wild-type and mutant individuals. Because of a sudden environmental change, the wild type is unfit and declines in the new environment. The mutant is beneficial and can survive and expand in the new environment, but it starts at a low (or zero) frequency in the total population. In order to rescue the population, it has to outcompete the wild type. If the mutant is not present at time 0, it has to appear through mutation and then spread in the population before extinction occurs.
+
+## List of variables and parameters
+- $N_a$ current size of the wild-type (a) population (changes over time)
+- $N_A$ current size of the mutant (A) population (changes over time)
+- `N_init_a` initial population size of wild-type population (should be a positive integer)
+- `N_init_A` initial population size of the mutant population (should be a non-negative integer)
+- `decay_rate` detrimental effect of the environment on the wild type (i.e., the wild-type population decays at this rate; should be >0 to induce potential extinction)
+- `sel_coeff` selective advantage of the mutant over the wild type (should be >decay_rate to allow for evolutionary rescue)
+- `mut_rate` mutation rate from the wild type to the mutant genotype (should be >0 and small)
+- `t_max` number of generations after which to stop the simulation (should be an integer >0; this is not a model parameter but a setting for the simulations). In the code presented here, the simulation stops automatically if the population goes extinct, or if it recovers and exceeds 1.5 times the original total population size, so `t_max` can be set to a large value without creating extremely long simulation times.
+
+## Simulate one generation of population size change
+We want to observe the numbers of wild-type and mutant individuals over time. As first step, we simulate one generation of the population. At time $t$, the population has $N_a$ wild-type individuals and $N_A$ mutant individuals. First, these reproduce. This is modeled by drawing a Poisson random variable according to the expected absolute number $N_a \cdot (1-r)$ of wild-type individuals, where $r$ is the decay rate of the wild type, and $N_A \cdot (1-r+s)$ of mutant individuals, where $s$ is the selective advantage of the mutant over the wild time. Then mutation from $a$ to $A$ occurs as a Poisson random variable according to the given mutation rate. This defines the composition of the population at time $t+1$.
+```{r}
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate) {
+  # draw offspring according to Poisson distribution
+  offsp_a <- rpois(1, N_a * (1-decay_rate))
+  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff))
+  # draw new mutants according to Poisson distribution
+  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
+  
+  # determine new population sizes of wild type and mutant
+  N_a_new <- max(offsp_a - mut_a_to_A, 0)
+  N_A_new <-  offsp_A + mut_a_to_A
+  
+  return(c(N_a_new, N_A_new))
+}
+# Test the function
+print(simulate_one_gen(100,0,0.1,0.2,0.01))
+``` 
+
+### Questions
+* Why do we substract `mut_a_to_A` from `N_a_new` and not from `N_A_new`?
+* In the life cycle as defined above, do individuals reproduce first and then mutate, or vice versa?
+* Running the test output repeatedly, why do you almost always get mutant individuals in the next generation, even though you start without any mutants?
+* What does the function `c` do?
+
+## Simulate a population trajectory
+We can now track the dynamics of the population from one generation to another, but this is not enough. We want to follow the population from time 0 until it either is rescued or goes extinct. This is what the following function does.
+```{r}
+simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max) {
+  # Create the vector in which to save the results
+  pop_vector <- c(N_init_a, N_init_A)
+  # initiate the variables
+  pop_new <- c(N_init_a, N_init_A)
+  
+  # run the simulation until generation t_max
+  for (i in 1:t_max+1) {
+    # redefine the current population one generation later
+    pop_new <- simulate_one_gen(pop_new[1],pop_new[2], decay_rate, sel_coeff, mut_rate)
+    # add the new population sizes to the output vector
+    pop_vector <- rbind(pop_vector,pop_new)
+    # condition to stop the simulation before t_max: either the population exceeds 1.5 times the original population size, or it goes extinct
+    if (pop_new[1]+pop_new[2]>=1.5*(N_init_a+ N_init_A) | pop_new[1]+pop_new[2]==0) break
+  }
+  
+  # define the row and column names of the output vector
+  rownames(pop_vector) <- (0:t_max)[1:length(pop_vector[,1])] # note that the vector has to be cut if the simulation stopped early
+  colnames(pop_vector) <- c("a","A")
+  # return the result
+  return(pop_vector)	
+}
+
+
+# Test the function and plot the result
+# set t_max to a value to be used througout
+max_gen <- 1000
+# create your simulation data
+output <- simulate_pop(1000,0,0.1,0.2,0.001,max_gen)
+# show the last few lines of the data table
+print(tail(output))
+# plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
+# determine x axis range 
+x_range <- 0:(length(output[,1])-1)
+# this plots the total population size
+plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
+# add number of wild type individuals
+lines(x_range,output[,1], col="blue")
+# add number of mutant individuals
+lines(x_range,output[,2], col="red")
+``` 
+
+### Questions
+* What is the difference between `pop_vector` and `pop_new`? 
+* What is the condition that breaks the loop good for? What are its disadvantages?
+* What does the function `tail` do?
+
+## A small analysis
+As you can see if you simulate and plot the output several times, there is a lot of stochasticity/variation in the outcome. Therefore, to get interpretable results, we have to run the simulation many times and summarize the outcome depending on the question of our study. Here I am showing an example in which we record the time and the value of the lowest population size (or the time of extinction, if the population size eventually goes to 0). Usually, we want to study this for a range of model parameters; here I am varying the decay rate and the selection coefficient. Other (maybe more interesting) features to study would be the following:
+
+- rescue probability dependent on initial frequency and selection coefficient
+- time at which the rescue mutation occurs first if it rescues, vs. if it doesn't rescue, dependent on initial population size and mutation rate
+- time until the population has recovered in case it becomes rescued, dependent on mutation rate and selection coefficient
+- ...
+
+```{r}
+# set some parameters to fixed values
+init_a <- 100
+init_A <- 0
+m_rate <- 0.001
+max_gen <- 1000
+# determine how often to run the simulation for each set of parameters
+no_replicates <- 100
+
+# set parameters to vary
+s_values <- c(0.2,0.3,0.4)
+r_values <- c(0.05,0.1,0.15)
+
+# initialize data table - where to collect the results
+data_table <- c()
+# run the simulation across all chosen parameters
+# loop over decay rates
+for(rval in r_values){
+  # loop over selection coefficients
+  for(sval in s_values){
+    # different way of running many simulations: make replicates using "repeat" function with a counter i
+    # reset counter
+    i<-1
+    repeat {
+      # increase counter by one
+      i<-i+1
+      # run the simulation once
+      one_run <- simulate_pop(init_a,init_A,rval,sval,m_rate,max_gen)
+      # determine total population sizes
+      total_size <- one_run[,1]+one_run[,2]
+      # determine minimum population size
+      min_size <- min(total_size)
+      # determine (first) generation at which this population size occurred
+      min_gen <- as.numeric(which(total_size==min_size)[1])
+      # enter the data into the table
+      data_table <- rbind(data_table,c(rval,sval,min_gen,min_size)) # note that we add the varying parameters (decay rate and selection coefficient) to the table too
+      # stop the repeated computation after no_replicates times
+      if(i>no_replicates) break
+    }
+  }
+}
+# define column names of data table
+colnames(data_table) <- c("r","s","min_gen","no_min")
+# show the first lines of the output
+print(head(data_table))
+``` 
+
+### Questions
+* Why does this code block run much more slowly than the others?
+* Why is it useful to define the parameters at the beginning (e.g. `init_a=100`) and use their names rather than the numbers throughout the rest of the code?
+* What does the function `which` do?
+
+## Next steps
+So, where do you go from here? Of course you won't just stare at these tables (at least not forever). Visualization would be a good step to see how the minimum population size varies with the decay rate and the selection coefficient. And you might want to include only the cases in which rescue happens, and also extract the rescue probability in parallel. However, the idea is that you pick a question that you find (more) interesting and implement modified versions of this code to address your question of choice.
