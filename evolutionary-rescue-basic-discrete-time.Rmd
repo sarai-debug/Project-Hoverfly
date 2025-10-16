@@ -39,6 +39,15 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 
 
 ## List of parameters
+-   `A_0` initial total adult population size 
+-   `f_w` fecundity wild-type adults, eggs laid per adult per generation
+-   `f_m` fecundity mutated adults, eggs laid per adult per generation
+-   `s_E_0` baseline survival rate of eggs -> adult, in stress-free environment
+-   `r_A` reduction in adult fecundity due to heat
+-   `r_E` reduction in eggs survival due to heat 
+
+
+## List of parameters and variables of base code 
 -   $N_a$ current size of the wild-type (a) population (changes over time)
 -   $N_A$ current size of the mutant (A) population (changes over time)
 -   `N_init_a` initial population size of wild-type population (should be a positive integer)
@@ -47,6 +56,7 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   `sel_coeff` selective advantage of the mutant over the wild type (should be \>decay_rate to allow for evolutionary rescue)
 -   `mut_rate` mutation rate from the wild type to the mutant genotype (should be \>0 and small)
 -   `t_max` number of generations after which to stop the simulation (should be an integer \>0; this is not a model parameter but a setting for the simulations). In the code presented here, the simulation stops automatically if the population goes extinct, or if it recovers and exceeds 1.5 times the original total population size, so `t_max` can be set to a large value without creating extremely long simulation times.
+
 
 ## Simulate one generation of population size change
 
@@ -70,12 +80,10 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate) {
 print(simulate_one_gen(100,0,0.1,0.2,0.01))
 ```
 
-### Questions
+## This is the code for our project:
+```{r}
 
--   Why do we substract `mut_a_to_A` from `N_a_new` and not from `N_A_new`?
--   In the life cycle as defined above, do individuals reproduce first and then mutate, or vice versa?
--   Running the test output repeatedly, why do you almost always get mutant individuals in the next generation, even though you start without any mutants?
--   What does the function `c` do?
+```
 
 ## Simulate a population trajectory
 
