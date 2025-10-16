@@ -32,11 +32,11 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   `A_m_0` initial number of mutant adults
 -   `f_w` fecundity wild-type adults, eggs laid per adult per generation
 -   `f_m` fecundity mutated adults, eggs laid per adult per generation
--   `s_f` fecundity advantage for adults
--   `s_E` fecundity advantage for eggs
+-   `s_A` fecundity advantage for mutant adults
+-   `s_E` egg survival advantage for mutant eggs
 -   `s_E_0` baseline survival rate of eggs -\> adult, in stress-free environment
--   `r_A` reduction in adult fecundity due to heat
--   `r_E` reduction in eggs survival due to heat
+-   `r_A` reduction in wild_type adult fecundity due to heat 
+-   `r_E` reduction in wild_type eggs survival due to heat
 -   `mu_rate` mutation rate, probability of mutant eggs laid by wild-type adults
 
 ## List of parameters and variables of base code
@@ -77,18 +77,27 @@ print(simulate_one_gen(100,0,0.1,0.2,0.01))
 ```{r}
 A_w <- A_w_0
 A_m <- A_m_0
-one_generation <- function(A_w, A_m, f_w, f_m, s_E_0, r_A, r_E, mu_rate){
+one_generation <- function(A_w, A_m, f_w, f_m, s_A, s_E, s_E_0, r_A, r_E, mu_rate){
   # draw offspring according to Poisson distribution
-  E_w <- rpois(1, A_w * (1-decay_rate))
-  E_m <- rpois(1, A_m * (1-decay_rate+sel_coeff))
+  E_w <- rpois(1, A_w * (f_w - r_A))
+  E_m <- rpois(1, A_m * (f_m + s_A))
+  
   # draw new mutants according to Poisson distribution
-  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
+  new_mutants <- rpois(1, E_w * mu_rate)
   
   # determine new population sizes of wild type and mutant
-  N_a_new <- max(offsp_a - mut_a_to_A, 0)
-  N_A_new <-  offsp_A + mut_a_to_A
   
-  return(c(N_a_new, N_A_new))
+  # new adults
+  A_w_new <- max((E_w - new_mutants)*(s_E_0 - r_E), 0)
+  A_m_new <- (E_m + new_mutants)*(s_E_0 + s_E)
+  
+  # new eggs
+  E_w <- ((E_w - new_mutants) - A_w_new)*somethingidk
+  E_m <- ((E_m + new_mutants) - A_m_new)*somethingidk
+  
+  
+  
+  return(c(A_, N_A_new))
 }
 ```
 
