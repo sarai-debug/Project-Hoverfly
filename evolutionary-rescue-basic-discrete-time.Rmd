@@ -7,32 +7,40 @@ output:
     df_print: paged
 ---
 
-------------------------------------------------------------------------
+## Question:
+
+*How do new mutations that affect the different life stages influence evolutionary rescue of the population under temperature stress?*
 
 ## Simulating evolutionary rescue in discrete time
 
 In this notebook, we are implementing simulations of evolutionary rescue by a single mutation in discrete time, as discussed and analyzed in the work by Orr & Unckless. The model is as follows: a haploid population starts with a given number of wild-type and mutant individuals. Because of a sudden environmental change, the wild type is unfit and declines in the new environment. The mutant is beneficial and can survive and expand in the new environment, but it starts at a low (or zero) frequency in the total population. In order to rescue the population, it has to outcompete the wild type. If the mutant is not present at time 0, it has to appear through mutation and then spread in the population before extinction occurs.
 
 ## List of variables
+
 -   `t` generation index, one generation per step
 -   `A_w(t)` number of wild-type adult individuals at generation t
--   `A_m(t)` number of mutated adult individuals at generation t 
--   `E_w(t)` number of wild-type eggs at generation t 
--   `E_m(t)` number of mutated eggs at generation t 
--   `N(t)`  total population size at generation t
--   `p_t` frequency of mutant among adults 
-
+-   `A_m(t)` number of mutated adult individuals at generation t
+-   `E_w(t)` number of wild-type eggs at generation t
+-   `E_m(t)` number of mutated eggs at generation t
+-   `N(t)` total population size at generation t
+-   `p_t` frequency of mutant among adults
 
 ## List of parameters
--   `A_0` initial total adult population size 
+
+-   `A_0` initial total adult population size
+-   `A_w_0` initial number of wild-type adults
+-   `A_m_0` initial number of mutant adults
 -   `f_w` fecundity wild-type adults, eggs laid per adult per generation
 -   `f_m` fecundity mutated adults, eggs laid per adult per generation
--   `s_E_0` baseline survival rate of eggs -> adult, in stress-free environment
+-   `s_f` fecundity advantage for adults
+-   `s_E` fecundity advantage for eggs
+-   `s_E_0` baseline survival rate of eggs -\> adult, in stress-free environment
 -   `r_A` reduction in adult fecundity due to heat
--   `r_E` reduction in eggs survival due to heat 
+-   `r_E` reduction in eggs survival due to heat
+-   `mu_rate` mutation rate, probability of mutant eggs laid by wild-type adults
 
+## List of parameters and variables of base code
 
-## List of parameters and variables of base code 
 -   $N_a$ current size of the wild-type (a) population (changes over time)
 -   $N_A$ current size of the mutant (A) population (changes over time)
 -   `N_init_a` initial population size of wild-type population (should be a positive integer)
@@ -41,7 +49,6 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   `sel_coeff` selective advantage of the mutant over the wild type (should be \>decay_rate to allow for evolutionary rescue)
 -   `mut_rate` mutation rate from the wild type to the mutant genotype (should be \>0 and small)
 -   `t_max` number of generations after which to stop the simulation (should be an integer \>0; this is not a model parameter but a setting for the simulations). In the code presented here, the simulation stops automatically if the population goes extinct, or if it recovers and exceeds 1.5 times the original total population size, so `t_max` can be set to a large value without creating extremely long simulation times.
-
 
 ## Simulate one generation of population size change
 
@@ -66,8 +73,23 @@ print(simulate_one_gen(100,0,0.1,0.2,0.01))
 ```
 
 ## This is the code for our project:
-```{r}
 
+```{r}
+A_w <- A_w_0
+A_m <- A_m_0
+one_generation <- function(A_w, A_m, f_w, f_m, s_E_0, r_A, r_E, mu_rate){
+  # draw offspring according to Poisson distribution
+  E_w <- rpois(1, A_w * (1-decay_rate))
+  E_m <- rpois(1, A_m * (1-decay_rate+sel_coeff))
+  # draw new mutants according to Poisson distribution
+  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
+  
+  # determine new population sizes of wild type and mutant
+  N_a_new <- max(offsp_a - mut_a_to_A, 0)
+  N_A_new <-  offsp_A + mut_a_to_A
+  
+  return(c(N_a_new, N_A_new))
+}
 ```
 
 ## Simulate a population trajectory
