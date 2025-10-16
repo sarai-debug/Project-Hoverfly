@@ -30,13 +30,15 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   `A_0` initial total adult population size
 -   `A_w_0` initial number of wild-type adults
 -   `A_m_0` initial number of mutant adults
--   `f_w` fecundity wild-type adults, eggs laid per adult per generation
--   `f_m` fecundity mutated adults, eggs laid per adult per generation
--   `s_A` fecundity advantage for mutant adults
--   `s_E` egg survival advantage for mutant eggs
--   `s_E_0` baseline survival rate of eggs -\> adult, in stress-free environment
--   `r_A` reduction in wild_type adult fecundity due to heat 
--   `r_E` reduction in wild_type eggs survival due to heat
+-   `f_w` fecundity wild-type adults, eggs laid per adult per generation (r_A already included in this parameter)
+-   `f_m` fecundity mutated adults, eggs laid per adult per generation (s_A already included in this parameter)
+-   `pZ_w` probability of survival of wild-type eggs into next generation (baseline survival rate of eggs + reduction of survival due to heat r_E)
+-   `pZ_m` probability of survival of mutant eggs into next generation (baseline survival rate of eggs + advantage of survival s_E)
+-   (`s_A` fecundity advantage for mutant adults)
+-   (`s_E` egg survival advantage for mutant eggs)
+-   (`s_E_0` baseline survival rate of eggs -\> adult, in stress-free environment)
+-   (`r_A` reduction in wild_type adult fecundity due to heat)
+-   (`r_E` reduction in wild_type eggs survival due to heat)
 -   `mu_rate` mutation rate, probability of mutant eggs laid by wild-type adults
 
 ## List of parameters and variables of base code
@@ -138,6 +140,52 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
 
  print(simulate_one_gen_ls(Z_w=1000, Z_m=0, f_w=2, f_m=2.5, hZ_w=0.5, hZ_m=0.5, pZ_w=0.1, pZ_m=0.1, mut_rate=0.1))
 
+```
+
+## New code 2
+
+```{r}
+
+simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_rate, t_max) {
+  # Create the vector in which to save the results
+  pop_vector <- c(Z_init_w, Z_init_m)
+  # initiate the variables
+  pop_new <- c(Z_init_w, Z_init_m)
+  
+  # run the simulation until generation t_max
+  for (i in 1:t_max+1) {
+    # redefine the current population one generation later
+    pop_new <- simulate_one_gen_ls(Z_w = pop_new[1], Z_m = pop_new[2], f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_rate)
+    # add the new population sizes to the output vector
+    pop_vector <- rbind(pop_vector,pop_new)
+    # condition to stop the simulation before t_max: either the population exceeds 1.5 times the original population size, or it goes extinct
+    if (pop_new[1]+pop_new[2]>=1000*(Z_init_w+ Z_init_m) | pop_new[1]+pop_new[2]==0) break
+  }
+  
+  # define the row and column names of the output vector
+  rownames(pop_vector) <- (0:t_max)[1:length(pop_vector[,1])] # note that the vector has to be cut if the simulation stopped early
+  colnames(pop_vector) <- c("w","m")
+  # return the result
+  return(pop_vector)	
+}
+
+
+# Test the function and plot the result
+# set t_max to a value to be used througout
+max_gen <- 10
+# create your simulation data
+output <- simulate_pop(Z_init_w = 100, Z_init_m = 100, f_w = 1, f_m = 4, hZ_w = 0.2, hZ_m = 0.3, pZ_w = 0.4, pZ_m = 0.5, mut_rate = 0.1,t_max = max_gen)
+# show the last few lines of the data table
+print(tail(output))
+# plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
+# determine x axis range 
+x_range <- 0:(length(output[,1])-1)
+# this plots the total population size
+plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
+# add number of wild type individuals
+lines(x_range,output[,1], col="blue")
+# add number of mutant individuals
+lines(x_range,output[,2], col="red")
 ```
 
 ## Simulate a population trajectory
