@@ -104,21 +104,21 @@ one_generation <- function(A_w, A_m, f_w, f_m, s_A, s_E, s_E_0, r_A, r_E, mu_rat
 
 ## New code 
 ```{r}
-simulate_one_gen_ls <- function(Z_a, Z_A, rN_a, rN_A, hZ_a, hZ_A, pZ_a, pZ_A, mut_rate) {
+simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_a, hZ_A, pZ_a, pZ_A, mut_rate) {
 
    # we assume that the number of individuals (eggs) is recorded in spring, before eggs hatch and adults reproduce 
   
    # after winter, adults hatch from eggs with hatching rate between 0 and 1
 
-   newAdults_a <- rbinom(1, Z_a,  hZ_a)
+   newAdults_a <- rbinom(1, Z_w,  hZ_a)
 
-   newAdults_A <- rbinom(1, Z_A,  hZ_A)
+   newAdults_A <- rbinom(1, Z_m,  hZ_A)
 
    # adults produce eggs with reproduction rate r
 
-   newEggs_a <- rpois(1, newAdults_a * rN_a)
+   newEggs_a <- rpois(1, newAdults_a * f_w)
 
-   newEggs_A <- rpois(1, newAdults_A * rN_A)
+   newEggs_A <- rpois(1, newAdults_A * f_m)
 
    # draw new mutants according to Poisson distribution
 
@@ -126,9 +126,9 @@ simulate_one_gen_ls <- function(Z_a, Z_A, rN_a, rN_A, hZ_a, hZ_A, pZ_a, pZ_A, mu
 
    # determine new population sizes of eggs, taking into account mortality during winter
 
-   Z_a_new <- rbinom(1,Z_a - newAdults_a + newEggs_a - mut_a_to_A, pZ_a)
+   Z_a_new <- rbinom(1,Z_w - newAdults_a + newEggs_a - mut_a_to_A, pZ_a)
 
-   Z_A_new <- rbinom(1,Z_A - newAdults_A + newEggs_A + mut_a_to_A, pZ_A)
+   Z_A_new <- rbinom(1,Z_m - newAdults_A + newEggs_A + mut_a_to_A, pZ_A)
 
    return(c(Z_a_new, Z_A_new))
 
@@ -136,7 +136,7 @@ simulate_one_gen_ls <- function(Z_a, Z_A, rN_a, rN_A, hZ_a, hZ_A, pZ_a, pZ_A, mu
 
  # Test the function
 
- print(simulate_one_gen_ls(Z_a=1000, Z_A=0, rN_a=2, rN_A=2.5, hZ_a=0.5, hZ_A=0.5, pZ_a=0.1, pZ_A=0.1, mut_rate=0.1))
+ print(simulate_one_gen_ls(Z_w=1000, Z_m=0, f_w=2, f_m=2.5, hZ_a=0.5, hZ_A=0.5, pZ_a=0.1, pZ_A=0.1, mut_rate=0.1))
 
 ```
 
