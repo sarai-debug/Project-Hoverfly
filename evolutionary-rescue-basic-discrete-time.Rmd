@@ -153,17 +153,18 @@ simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, m
   pop_new <- c(Z_init_w, Z_init_m)
   
   # run the simulation until generation t_max
-  for (i in 1:t_max+1) {
+  for (i in 1:(t_max+1)) {
     # redefine the current population one generation later
     pop_new <- simulate_one_gen_ls(Z_w = pop_new[1], Z_m = pop_new[2], f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_rate)
     # add the new population sizes to the output vector
     pop_vector <- rbind(pop_vector,pop_new)
     # condition to stop the simulation before t_max: either the population exceeds 1.5 times the original population size, or it goes extinct
-    if (pop_new[1]+pop_new[2]>=1000*(Z_init_w+ Z_init_m) | pop_new[1]+pop_new[2]==0) break
+    if (is.na(pop_new[1]) | is.na(pop_new[2])) break
+    if (pop_new[1]+pop_new[2]>=100*(Z_init_w+ Z_init_m) | pop_new[1]+pop_new[2]==0) break
   }
   
   # define the row and column names of the output vector
-  rownames(pop_vector) <- (0:t_max)[1:length(pop_vector[,1])] # note that the vector has to be cut if the simulation stopped early
+ # rownames(pop_vector) <- (0:t_max)[1:length(pop_vector[,1])] # note that the vector has to be cut if the simulation stopped early
   colnames(pop_vector) <- c("w","m")
   # return the result
   return(pop_vector)	
@@ -174,7 +175,7 @@ simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, m
 # set t_max to a value to be used throughout
 max_gen <- 200
 # create your simulation data
-output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.01,t_max = max_gen)
+output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.001,t_max = max_gen)
 # show the last few lines of the data table
 print(tail(output))
 # plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
@@ -197,7 +198,7 @@ legend("top", legend = c("Wildtype eggs", "Mutant eggs"),
 ## Running and recording many rounds
 ```{r}
 num_rounds <- 100
-extint_count <- 0
+extinct_count <- 0
 rescue_count <- 0
 
 
@@ -206,32 +207,69 @@ for (i in 1:num_rounds) {
   Z_init_w <- 100
   Z_init_m <- 50
   
-  round_gen <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+  round_gen <- simulate_pop(Z_init_w = 1, Z_init_m = 100, f_w = 3, f_m = 3, 
                             hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
                             mut_rate = 0.01,t_max = max_gen)
   
   total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
-  
-  
-  if (total_pop == 0) {
-    extinct_count <- extinct_count + 1
-  }
 
-  else if (total_pop > (Z_init_w + Z_init_m)){
-     rescue_count <- rescue_count + 1
-  }
   
+   if (total_pop == 0) {
+     extinct_count <- extinct_count + 1
+   }
+
+   else if (total_pop > (Z_init_w + Z_init_m)){
+     rescue_count <- rescue_count + 1
+   }
+
   prob_rescue <- rescue_count/num_rounds*100
   prob_extinct <- extinct_count/num_rounds*100
-  
+
 }
 
 ```
 
 
 
+```{r}
+mut_rates <- seq(0.01, 0.5, by = 0.02)
+
+    Z_init_w <- 100
+    Z_init_m <- 50
+    
+for (i in 1:num_rounds) {
+  
+  extinct_count <- 0
+  rescue_count <- 0
+  
+  for (mut in seq(0.01, 0.5, by = 0.02)){
+   
+  
+    round_gen <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+                            mut_rate = mut,t_max = max_gen)
+  
+    total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
+  
+  
+    if (total_pop == 0) {
+      extinct_count <- extinct_count + 1
+    }
+
+    else if (total_pop > (Z_init_w + Z_init_m)){
+      rescue_count <- rescue_count + 1
+    }
+}
+
+  prob_rescue <- rescue_count/num_rounds*100
+  prob_extinct <- extinct_count/num_rounds*100
+
+}
+
+```
 
 
+--> mut_rate breaks pois distr for some reason giving NA values 
 
 
 
