@@ -194,15 +194,33 @@ legend("top", legend = c("Wildtype eggs", "Mutant eggs"),
 
 
 
-
 ## Running and recording many rounds
 ```{r}
 num_rounds <- 100
+extint_count <- 0
+rescue_count <- 0
 
-for (r in 1:num_rounds) {
-  output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.01,t_max = max_gen)
+
+for (i in 1:num_rounds) {
+  
+  Z_init_w <- 100
+  Z_init_m <- 50
+  
+  round_gen <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+                            mut_rate = 0.01,t_max = max_gen)
+  
+  total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
   
   
+  if (total_pop == 0) {
+    extint_count <- extint_count + 1
+  }
+
+  else if (total_pop > (Z_init_w + Z_init_m)){
+     rescue_count <- rescue_count + 1
+  }
+
 }
 
 ```
