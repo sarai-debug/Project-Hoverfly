@@ -271,7 +271,9 @@ for (i in 1:num_rounds) {
 
 --> mut_rate breaks pois distr for some reason giving NA values 
 
+--> lower more realistic mutation rates!!!!
 
+--> maybe other parameters bc of different life stages 
 
 
 
