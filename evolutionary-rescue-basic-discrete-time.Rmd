@@ -171,75 +171,51 @@ simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, m
 
 
 # Test the function and plot the result
-# set t_max to a value to be used througout
-max_gen <- 10
+# set t_max to a value to be used throughout
+max_gen <- 200
 # create your simulation data
-output <- simulate_pop(Z_init_w = 100, Z_init_m = 100, f_w = 1, f_m = 4, hZ_w = 0.2, hZ_m = 0.3, pZ_w = 0.4, pZ_m = 0.5, mut_rate = 0.1,t_max = max_gen)
+output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.01,t_max = max_gen)
 # show the last few lines of the data table
 print(tail(output))
 # plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
 # determine x axis range 
 x_range <- 0:(length(output[,1])-1)
 # this plots the total population size
-plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
+plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Number of Eggs")
 # add number of wild type individuals
 lines(x_range,output[,1], col="blue")
 # add number of mutant individuals
 lines(x_range,output[,2], col="red")
+legend("top", legend = c("Wildtype eggs", "Mutant eggs"), 
+       col = c("blue", "red"), lty = 1)
+
+
 ```
 
-## Simulate a population trajectory
 
-We can now track the dynamics of the population from one generation to another, but this is not enough. We want to follow the population from time 0 until it either is rescued or goes extinct. This is what the following function does.
 
+
+## Running and recording many rounds
 ```{r}
-simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max) {
-  # Create the vector in which to save the results
-  pop_vector <- c(N_init_a, N_init_A)
-  # initiate the variables
-  pop_new <- c(N_init_a, N_init_A)
+num_rounds <- 100
+
+for (r in 1:num_rounds) {
+  output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.01,t_max = max_gen)
   
-  # run the simulation until generation t_max
-  for (i in 1:t_max+1) {
-    # redefine the current population one generation later
-    pop_new <- simulate_one_gen(pop_new[1],pop_new[2], decay_rate, sel_coeff, mut_rate)
-    # add the new population sizes to the output vector
-    pop_vector <- rbind(pop_vector,pop_new)
-    # condition to stop the simulation before t_max: either the population exceeds 1.5 times the original population size, or it goes extinct
-    if (pop_new[1]+pop_new[2]>=1.5*(N_init_a+ N_init_A) | pop_new[1]+pop_new[2]==0) break
-  }
   
-  # define the row and column names of the output vector
-  rownames(pop_vector) <- (0:t_max)[1:length(pop_vector[,1])] # note that the vector has to be cut if the simulation stopped early
-  colnames(pop_vector) <- c("a","A")
-  # return the result
-  return(pop_vector)	
 }
 
-
-# Test the function and plot the result
-# set t_max to a value to be used througout
-max_gen <- 1000
-# create your simulation data
-output <- simulate_pop(1000,0,0.1,0.2,0.001,max_gen)
-# show the last few lines of the data table
-print(tail(output))
-# plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
-# determine x axis range 
-x_range <- 0:(length(output[,1])-1)
-# this plots the total population size
-plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
-# add number of wild type individuals
-lines(x_range,output[,1], col="blue")
-# add number of mutant individuals
-lines(x_range,output[,2], col="red")
 ```
 
-### Questions
 
--   What is the difference between `pop_vector` and `pop_new`?
--   What is the condition that breaks the loop good for? What are its disadvantages?
--   What does the function `tail` do?
+
+
+
+
+
+
+
+
 
 ## A small analysis
 
@@ -297,11 +273,6 @@ colnames(data_table) <- c("r","s","min_gen","no_min")
 print(head(data_table))
 ```
 
-### Questions
-
--   Why does this code block run much more slowly than the others?
--   Why is it useful to define the parameters at the beginning (e.g. `init_a=100`) and use their names rather than the numbers throughout the rest of the code?
--   What does the function `which` do?
 
 ## Next steps
 
