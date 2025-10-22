@@ -7,15 +7,11 @@ output:
     df_print: paged
 ---
 
-## Question:
+# Question:
 
 *How do new mutations that affect the different life stages influence evolutionary rescue of the population under temperature stress?*
 
-## Simulating evolutionary rescue in discrete time
-
-In this notebook, we are implementing simulations of evolutionary rescue by a single mutation in discrete time, as discussed and analyzed in the work by Orr & Unckless. The model is as follows: a haploid population starts with a given number of wild-type and mutant individuals. Because of a sudden environmental change, the wild type is unfit and declines in the new environment. The mutant is beneficial and can survive and expand in the new environment, but it starts at a low (or zero) frequency in the total population. In order to rescue the population, it has to outcompete the wild type. If the mutant is not present at time 0, it has to appear through mutation and then spread in the population before extinction occurs.
-
-## List of variables
+# List of variables
 
 -   `t` generation index, one generation per step
 -   `A_w(t)` number of wild-type adult individuals at generation t
@@ -25,7 +21,7 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   `N(t)` total population size at generation t
 -   `p_t` frequency of mutant among adults
 
-## List of parameters
+# List of parameters
 
 -   `A_0` initial total adult population size
 -   `A_w_0` initial number of wild-type adults
@@ -41,71 +37,10 @@ In this notebook, we are implementing simulations of evolutionary rescue by a si
 -   (`r_E` reduction in wild_type eggs survival due to heat)
 -   `mu_rate` mutation rate, probability of mutant eggs laid by wild-type adults
 
-## List of parameters and variables of base code
-
--   $N_a$ current size of the wild-type (a) population (changes over time)
--   $N_A$ current size of the mutant (A) population (changes over time)
--   `N_init_a` initial population size of wild-type population (should be a positive integer)
--   `N_init_A` initial population size of the mutant population (should be a non-negative integer)
--   `decay_rate` detrimental effect of the environment on the wild type (i.e., the wild-type population decays at this rate; should be \>0 to induce potential extinction)
--   `sel_coeff` selective advantage of the mutant over the wild type (should be \>decay_rate to allow for evolutionary rescue)
--   `mut_rate` mutation rate from the wild type to the mutant genotype (should be \>0 and small)
--   `t_max` number of generations after which to stop the simulation (should be an integer \>0; this is not a model parameter but a setting for the simulations). In the code presented here, the simulation stops automatically if the population goes extinct, or if it recovers and exceeds 1.5 times the original total population size, so `t_max` can be set to a large value without creating extremely long simulation times.
-
-## Simulate one generation of population size change
-
-We want to observe the numbers of wild-type and mutant individuals over time. As first step, we simulate one generation of the population. At time $t$, the population has $N_a$ wild-type individuals and $N_A$ mutant individuals. First, these reproduce. This is modeled by drawing a Poisson random variable according to the expected absolute number $N_a \cdot (1-r)$ of wild-type individuals, where $r$ is the decay rate of the wild type, and $N_A \cdot (1-r+s)$ of mutant individuals, where $s$ is the selective advantage of the mutant over the wild time. Then mutation from $a$ to $A$ occurs as a Poisson random variable according to the given mutation rate. This defines the composition of the population at time $t+1$.
+# Base Code
 
 ```{r}
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate) {
-  # draw offspring according to Poisson distribution
-  offsp_a <- rpois(1, N_a * (1-decay_rate))
-  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff))
-  # draw new mutants according to Poisson distribution
-  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
-  
-  # determine new population sizes of wild type and mutant
-  N_a_new <- max(offsp_a - mut_a_to_A, 0)
-  N_A_new <-  offsp_A + mut_a_to_A
-  
-  return(c(N_a_new, N_A_new))
-}
-# Test the function
-print(simulate_one_gen(100,0,0.1,0.2,0.01))
-```
-
-## This is the code for our project:
-
-```{r}
-A_w <- A_w_0
-A_m <- A_m_0
-one_generation <- function(A_w, A_m, f_w, f_m, s_A, s_E, s_E_0, r_A, r_E, mu_rate){
-  # draw offspring according to Poisson distribution
-  E_w <- rpois(1, A_w * (f_w - r_A))
-  E_m <- rpois(1, A_m * (f_m + s_A))
-  
-  # draw new mutants according to Poisson distribution
-  new_mutants <- rpois(1, E_w * mu_rate)
-  
-  # determine new population sizes of wild type and mutant
-  
-  # new adults
-  A_w_new <- max((E_w - new_mutants)*(s_E_0 - r_E), 0)
-  A_m_new <- (E_m + new_mutants)*(s_E_0 + s_E)
-  
-  # new eggs
-  E_w <- ((E_w - new_mutants) - A_w_new)*somethingidk
-  E_m <- ((E_m + new_mutants) - A_m_new)*somethingidk
-  
-  
-
-  return(c(A_, N_A_new))
-}
-```
-
-
-## New code 
-```{r}
+# Simulating one generation:
 simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_rate) {
 
    # we assume that the number of individuals (eggs) is recorded in spring, before eggs hatch and adults reproduce 
@@ -116,7 +51,7 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
 
    newAdults_m <- rbinom(1, Z_m,  hZ_m)
 
-   # adults produce eggs with reproduction rate r
+   # adults produce eggs with fecundity rate f (number of offspring produced per adult)
 
    newEggs_w <- rpois(1, newAdults_w * f_w)
 
@@ -137,19 +72,19 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
    
    # determine new population sizes of eggs, taking into account mortality during winter
 
-  Z_w_new <- rbinom(1, Z_w_test, pZ_w)
+   Z_w_new <- rbinom(1, Z_w_test, pZ_w)
    Z_m_new <- rbinom(1, Z_m_test, pZ_m)
    
    return(c(Z_w_new, Z_m_new))
  }
 
- # Test the function
+ # Print the function
 
  print(simulate_one_gen_ls(Z_w=1000, Z_m=0, f_w=2, f_m=2.5, hZ_w=0.5, hZ_m=0.5, pZ_w=0.1, pZ_m=0.1, mut_rate=0.1))
 
 ```
 
-## New code 2
+# Simulating a population during a period of time
 
 ```{r}
 
@@ -182,7 +117,7 @@ simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, m
 # set t_max to a value to be used throughout
 max_gen <- 200
 # create your simulation data
-output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0,t_max = max_gen)
+output <- simulate_pop(Z_init_w = 100, Z_init_m = 0, f_w = 3, f_m = 3, hZ_w = 0.4, hZ_m = 0.5, pZ_w = 0.4, pZ_m = 0.5, mut_rate = 0.001,t_max = max_gen)
 # show the last few lines of the data table
 print(tail(output))
 # plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
@@ -200,9 +135,8 @@ legend("top", legend = c("Wildtype eggs", "Mutant eggs"),
 
 ```
 
+# Running and recording many rounds
 
-
-## Running and recording many rounds
 ```{r}
 num_rounds <- 100
 extinct_count <- 0
@@ -236,17 +170,18 @@ for (i in 1:num_rounds) {
 prob_rescue
 ```
 
-
+# Rescue probability with varying mutation rates
 
 ```{r}
-num_rounds <- 100
-inita_pop <- 100+50
+num_rounds <- 400
+inita_pop <- 1000+50
 mut_rates <- seq(0, 0.02, by = 0.005)
 
     
     # creating a data frame to keep all output
     
-    results <- data.frame(mut_rate=numeric(), rescue_prob=numeric(), extinct_prob=numeric())
+    results <- data.frame(mut_rate=numeric(), rescue_prob=numeric(), extinct_prob=numeric(), rescue_by_w=numeric(), rescue_by_m=numeric())
+    freq_df <- data.frame(array(NA, dim =c(0,3), dimnames = list(c(), c("mutation_rate", "wildtype", "mutant"))))
  
     # for (i in 1:num_rounds)   
   for (mut in mut_rates) {
@@ -257,49 +192,61 @@ mut_rates <- seq(0, 0.02, by = 0.005)
   for (i in 1:num_rounds){
    
   
-    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 5, f_w = 5, f_m = 5, 
-                            hZ_w = 0.3, hZ_m = 0.4, pZ_w = 0.1, pZ_m = 0.6, 
-                            mut_rate = mut,t_max = max_gen)
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+                            mut_rate = mut_rates,t_max = max_gen)
   
     # total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
     total_pop <- sum(tail(sim, 1))
   
   
-    if (total_pop == 0) 
-      extinct_count <- extinct_count + 1
+    if (total_pop == 0){ 
+        extinct_count <- extinct_count + 1
     
     # if (total_pop > inita_pop)
-    else
+    }
+    else{
       rescue_count <- rescue_count + 1
-    
+      freq_df <- rbind(freq_df, c(mut, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
+   }
 }
     
    # result for each mutation rate
-  results <- rbind(results, data.frame(mut_rates = mut,   prob_rescue = rescue_count/num_rounds * 100,
-  prob_extinct = extinct_count/num_rounds * 100))
-  
-
+  results <- rbind(results, data.frame(mut_rates = mut, 
+                                       prob_rescue = rescue_count/num_rounds * 100, 
+                                       prob_extinct = extinct_count/num_rounds * 100))
 }
     print(results)
     
+    colnames(freq_df) <- c("mutation_rate", "wildtype", "mutant")
+    print(freq_df)
+    
     # plot for rescue probability
     
-    plot(results$mut_rates, results$prob_rescue, type='b', col='darkgreen', pch=21,
-     xlab='Mutation rate', ylab='Rescue probability (%)',
-     main='Evolutionary Rescue vs Mutation Rate')
+    plot(results$mut_rates, results$prob_rescue, type='b',  
+         col='darkgreen', pch=21, xlab='Mutation rate', 
+         ylab='Rescue probability (%)',
+         main='Evolutionary Rescue vs Mutation Rate')
     
+    # frequency plot against mutation rate
+    
+    plot(freq_df$mutation_rate, freq_df$mutant, type='p',  
+         col='darkgreen', pch=21, xlab='Mutation rate', 
+         ylab='Frequency of Mutant at End of Simulation',
+         main='Frequency at Rescue vs Mutation Rate')
+    
+    # boxplot for frequency and mutation rate
+    boxplot(mutant ~ mutation_rate,
+        data = freq_df,
+        col = "darkgreen",
+        border = "black",
+        xlab = "Mutation rate",
+        ylab = "Frequency of Mutant at End of Simulation",
+        main = "Frequency at Rescue vs Mutation Rate")
     
 ```
 
-
---> mut_rate breaks pois distr for some reason giving NA values 
-
---> lower more realistic mutation rates!!!!
-
---> maybe other parameters bc of different life stages 
-
-
-
+--\> maybe other parameters bc of different life stages
 
 ## A small analysis
 
@@ -356,7 +303,6 @@ colnames(data_table) <- c("r","s","min_gen","no_min")
 # show the first lines of the output
 print(head(data_table))
 ```
-
 
 ## Next steps
 
