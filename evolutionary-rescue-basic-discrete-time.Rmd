@@ -126,14 +126,14 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
 
    mut_w_to_m <- rpois(1, newEggs_w * mut_rate)
    
-   # ensure do not mutate more eggs than exist#
+   # ensure do not mutate more eggs than exist
    
    if (mut_w_to_m > newEggs_w) mut_w_to_m <- newEggs_w
    
    # calculating next generation with no negative number
    
    Z_w_test <- max(Z_w - newAdults_w + newEggs_w - mut_w_to_m, 0)
-   Z_m_test <- max(Z_m - newAdults_m + newEggs_m - mut_w_to_m, 0)
+   Z_m_test <- max(Z_m - newAdults_m + newEggs_m + mut_w_to_m, 0)
    
    # determine new population sizes of eggs, taking into account mortality during winter
 
@@ -141,9 +141,6 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
    Z_m_new <- rbinom(1, Z_m_test, pZ_m)
    
    return(c(Z_w_new, Z_m_new))
-
-   
-
  }
 
  # Test the function
@@ -185,7 +182,7 @@ simulate_pop <- function(Z_init_w, Z_init_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, m
 # set t_max to a value to be used throughout
 max_gen <- 200
 # create your simulation data
-output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0.001,t_max = max_gen)
+output <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, mut_rate = 0,t_max = max_gen)
 # show the last few lines of the data table
 print(tail(output))
 # plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
@@ -217,9 +214,9 @@ for (i in 1:num_rounds) {
   Z_init_w <- 100
   Z_init_m <- 50
   
-  round_gen <- simulate_pop(Z_init_w = 1, Z_init_m = 100, f_w = 3, f_m = 3, 
+  round_gen <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
                             hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
-                            mut_rate = 0.01,t_max = max_gen)
+                            mut_rate = 0.02,t_max = max_gen)
   
   total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
 
@@ -234,9 +231,9 @@ for (i in 1:num_rounds) {
 
   prob_rescue <- rescue_count/num_rounds*100
   prob_extinct <- extinct_count/num_rounds*100
-
+  
 }
-
+prob_rescue
 ```
 
 
@@ -244,7 +241,7 @@ for (i in 1:num_rounds) {
 ```{r}
 num_rounds <- 100
 inita_pop <- 100+50
-mut_rates <- seq(0.001, 0.02, by = 0.002)
+mut_rates <- seq(0, 0.02, by = 0.005)
 
     
     # creating a data frame to keep all output
@@ -260,8 +257,8 @@ mut_rates <- seq(0.001, 0.02, by = 0.002)
   for (i in 1:num_rounds){
    
   
-    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
-                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 5, f_w = 5, f_m = 5, 
+                            hZ_w = 0.3, hZ_m = 0.4, pZ_w = 0.1, pZ_m = 0.6, 
                             mut_rate = mut,t_max = max_gen)
   
     # total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
@@ -271,14 +268,15 @@ mut_rates <- seq(0.001, 0.02, by = 0.002)
     if (total_pop == 0) 
       extinct_count <- extinct_count + 1
     
-    if (total_pop > inita_pop)
+    # if (total_pop > inita_pop)
+    else
       rescue_count <- rescue_count + 1
     
 }
     
    # result for each mutation rate
-  results <- rbind(results, data.frame(mut_rates = mut,   prob_rescue <- rescue_count/num_rounds * 100,
-  prob_extinct <- extinct_count/num_rounds * 100))
+  results <- rbind(results, data.frame(mut_rates = mut,   prob_rescue = rescue_count/num_rounds * 100,
+  prob_extinct = extinct_count/num_rounds * 100))
   
 
 }
@@ -286,9 +284,11 @@ mut_rates <- seq(0.001, 0.02, by = 0.002)
     
     # plot for rescue probability
     
-    plot(results$mut_rate, results$rescue_prob, type='b', col='darkgreen', pch=21,
+    plot(results$mut_rates, results$prob_rescue, type='b', col='darkgreen', pch=21,
      xlab='Mutation rate', ylab='Rescue probability (%)',
      main='Evolutionary Rescue vs Mutation Rate')
+    
+    
 ```
 
 
