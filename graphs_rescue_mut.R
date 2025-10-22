@@ -1,13 +1,10 @@
-```{r}
 num_rounds <- 400
-inita_pop <- 1000+50
-mut_rates <- seq(0, 0.02, by = 0.005)
+hatching_rate <- seq(0, 2, by = 0.05)
 
 
 # creating a data frame to keep all output
 
-results <- data.frame(mut_rate=numeric(), rescue_prob=numeric(), extinct_prob=numeric(), rescue_by_w=numeric(), rescue_by_m=numeric())
-freq_df <- data.frame(array(NA, dim =c(0,3), dimnames = list(c(), c("mutation_rate", "wildtype", "mutant"))))
+results_hm <- data.frame (array(NA, dim =c(0,3), dimnames = list(c(), c("Hatching_rate", "mutant"))))
 
 # for (i in 1:num_rounds)   
 for (mut in mut_rates) {
@@ -38,18 +35,18 @@ for (mut in mut_rates) {
   }
   
   # result for each mutation rate
-  results <- rbind(results, data.frame(mut_rates = mut, 
+  results_hm <- rbind(results_hm, data.frame(mut_rates = mut, 
                                        prob_rescue = rescue_count/num_rounds * 100, 
                                        prob_extinct = extinct_count/num_rounds * 100))
 }
-print(results)
+print(results_hm)
 
-colnames(freq_df) <- c("mutation_rate", "wildtype", "mutant")
+colnames(freq_df) <- c("Hatching_rate", "wildtype", "mu")
 print(freq_df)
 
 # plot for rescue probability
 
-plot(results$mut_rates, results$prob_rescue, type='b',  
+plot(results_hm$mut_rates, results_hm$prob_rescue, type='b',  
      col='darkgreen', pch=21, xlab='Mutation rate', 
      ylab='Rescue probability (%)',
      main='Evolutionary Rescue vs Mutation Rate')
@@ -70,4 +67,4 @@ boxplot(mutant ~ mutation_rate,
         ylab = "Frequency of Mutant at End of Simulation",
         main = "Frequency at Rescue vs Mutation Rate")
 
-```
+
