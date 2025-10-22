@@ -125,14 +125,24 @@ simulate_one_gen_ls <- function(Z_w, Z_m, f_w, f_m, hZ_w, hZ_m, pZ_w, pZ_m, mut_
    # draw new mutants according to Poisson distribution
 
    mut_w_to_m <- rpois(1, newEggs_w * mut_rate)
-
+   
+   # ensure do not mutate more eggs than exist#
+   
+   if (mut_w_to_m > newEggs_w) mut_w_to_m <- newEggs_w
+   
+   # calculating next generation with no negative number
+   
+   Z_w_test <- max(Z_w - newAdults_w + newEggs_w - mut_w_to_m, 0)
+   Z_m_test <- max(Z_m - newAdults_m + newEggs_m - mut_w_to_m, 0)
+   
    # determine new population sizes of eggs, taking into account mortality during winter
 
-   Z_w_new <- rbinom(1,Z_w - newAdults_w + newEggs_w - mut_w_to_m, pZ_w)
-
-   Z_m_new <- rbinom(1,Z_m - newAdults_m + newEggs_m + mut_w_to_m, pZ_m)
-
+  Z_w_new <- rbinom(1, Z_w_test, pZ_w)
+   Z_m_new <- rbinom(1, Z_m_test, pZ_m)
+   
    return(c(Z_w_new, Z_m_new))
+
+   
 
  }
 
@@ -232,40 +242,53 @@ for (i in 1:num_rounds) {
 
 
 ```{r}
-mut_rates <- seq(0.01, 0.5, by = 0.02)
+num_rounds <- 100
+inita_pop <- 100+50
+mut_rates <- seq(0.001, 0.02, by = 0.002)
 
-    Z_init_w <- 100
-    Z_init_m <- 50
     
-for (i in 1:num_rounds) {
+    # creating a data frame to keep all output
+    
+    results <- data.frame(mut_rate=numeric(), rescue_prob=numeric(), extinct_prob=numeric())
+ 
+    # for (i in 1:num_rounds)   
+  for (mut in mut_rates) {
   
   extinct_count <- 0
   rescue_count <- 0
   
-  for (mut in seq(0.01, 0.5, by = 0.02)){
+  for (i in 1:num_rounds){
    
   
-    round_gen <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
                             hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
                             mut_rate = mut,t_max = max_gen)
   
-    total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
+    # total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
+    total_pop <- sum(tail(sim, 1))
   
   
-    if (total_pop == 0) {
+    if (total_pop == 0) 
       extinct_count <- extinct_count + 1
-    }
-
-    else if (total_pop > (Z_init_w + Z_init_m)){
+    
+    if (total_pop > inita_pop)
       rescue_count <- rescue_count + 1
-    }
+    
 }
-
-  prob_rescue <- rescue_count/num_rounds*100
-  prob_extinct <- extinct_count/num_rounds*100
+    
+   # result for each mutation rate
+  results <- rbind(results, data.frame(mut_rates = mut,   prob_rescue <- rescue_count/num_rounds * 100,
+  prob_extinct <- extinct_count/num_rounds * 100))
+  
 
 }
-
+    print(results)
+    
+    # plot for rescue probability
+    
+    plot(results$mut_rate, results$rescue_prob, type='b', col='darkgreen', pch=21,
+     xlab='Mutation rate', ylab='Rescue probability (%)',
+     main='Evolutionary Rescue vs Mutation Rate')
 ```
 
 
