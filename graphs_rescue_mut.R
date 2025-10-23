@@ -8,7 +8,7 @@ hZ_m_values <- seq(0.1, 0.9 , by = 0.1)
 # creating a data frame to keep all output
 
 results <- data.frame(hZ_m = numeric(), prob_rescue = numeric(), prob_extinct = numeric())
-
+freq_df <- data.frame(array(NA, dim =c(0,3), dimnames = list(c(), c("hW_m", "wildtype", "mutant"))))
 
 
 # for (i in 1:num_rounds)   
@@ -35,7 +35,7 @@ for (hZ_m in hZ_m_values) {
     }
     else{
       rescue_count <- rescue_count + 1
-      # freq_df <- rbind(freq_df, c(mut, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
+      freq_df <- rbind(freq_df, c(hZ_m, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
     }
   }
   
@@ -46,8 +46,8 @@ for (hZ_m in hZ_m_values) {
 }
 print(results)
 
-# # colnames(freq_df) <- c("hZ_m", "wildtype", "mutant")
-# print(head(freq_df))
+  colnames(freq_df) <- c("hZ_m", "wildtype", "mutant")
+  print(head(freq_df))
 
 # plot for rescue probability
 
@@ -56,21 +56,21 @@ plot(results$hZ_m, results$prob_rescue, type='b',
      ylab='Rescue probability (%)',
      main='Evolutionary Rescue vs Mutant hatching Rate')
 
-# # frequency plot against mutant hatching rate
-# 
-# plot(freq_df$hZ_m, freq_df$mutant, type='p',  
-#      col='darkgreen', pch=21, xlab='Mutant hatching rate', 
-#      ylab='Frequency of Mutant at End of Simulation',
-#      main='Frequency at Rescue vs Mutant hatching Rate')
+# frequency plot against mutant hatching rate
+
+plot(freq_df$hZ_m, freq_df$mutant, type='p',
+     col='darkgreen', pch=21, xlab='Mutant hatching rate',
+     ylab='Frequency of Mutant at End of Simulation',
+     main='Frequency at Rescue vs Mutant hatching Rate')
 
 
-# # boxplot for frequency and mutant hatching rate
-# boxplot(mutant_freq ~ hZ_m,
-#         data = freq_df,
-#         col = "darkgreen",
-#         border = "black",
-#         xlab = "Mutant hatching rate",
-#         ylab = "Frequency of Mutant at End of Simulation",
-#         main = "Distribution of mutant frequency at rescue")
+# boxplot for frequency and mutant hatching rate
+boxplot(freq_df ~ hZ_m,
+        data = freq_df,
+        col = "darkgreen",
+        border = "black",
+        xlab = "Mutant hatching rate",
+        ylab = "Frequency of Mutant at End of Simulation",
+        main = "Distribution of mutant frequency at rescue")
 
 
