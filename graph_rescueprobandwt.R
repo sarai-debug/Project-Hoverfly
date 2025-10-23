@@ -40,9 +40,9 @@ print(results_hatch_wt)
 # plot for rescue probability
 
 plot(results_hatch_wt$hatching_rates, results_hatch_wt$prob_rescue, type='b',  
-     col='darkgreen', pch=21, xlab='Mutation rate', 
+     col='darkgreen', pch=21, xlab='Wildtype hatching rate', 
      ylab='Rescue probability (%)',
-     main='Evolutionary Rescue vs Mutation Rate')
+     main='Evolutionary Rescue vs Wildtype hatching rate')
 
 
 # boxplot for frequency and mutation rate
