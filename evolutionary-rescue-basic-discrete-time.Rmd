@@ -192,9 +192,10 @@ mut_rates <- seq(0, 0.02, by = 0.005)
   for (i in 1:num_rounds){
    
   
-    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
-                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3,
+                            hZ_w = 0.5, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5,
                             mut_rate = mut_rates,t_max = max_gen)
+    
   
     # total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
     total_pop <- sum(tail(sim, 1))
