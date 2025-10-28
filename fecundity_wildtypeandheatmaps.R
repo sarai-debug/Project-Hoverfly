@@ -73,8 +73,8 @@ boxplot(mutant ~ f_w,
 library(ggplot2)
 
 # ranges for the parameters
-hZ_m_values <- seq(0.1, 0.9, by = 0.1)
-f_m_values <- seq(1, 10, by = 0.5)
+hZ_m_values <- seq(0, 0.9, by = 0.1)
+f_m_values <- seq(0, 10, by = 0.5)
 
 num_rounds <- 400
 max_gen <- 200
@@ -115,10 +115,10 @@ ggplot(results_matrix, aes(x = f_m, y = hZ_m, fill = prob_rescue)) +
 library(ggplot2)
 
 # Define parameter ranges
-f_w_values <- seq(1, 10, by = 0.5)   
-f_m_values <- seq(1, 10, by = 0.5)   
+f_w_values <- seq(0, 5, by = 0.1)   
+f_m_values <- seq(0, 5, by = 0.1)   
 
-num_rounds <- 400   
+num_rounds <- 200   
 max_gen <- 200       
 
 # Data storage
@@ -154,57 +154,9 @@ ggplot(results_matrix, aes(x = f_w, y = f_m, fill = prob_rescue)) +
   labs(
     x = "Wildtype fecundity (f_w)",
     y = "Mutant fecundity (f_m)",
-    title = "Heatmap: Evolutionary Rescue vs Fecundity of Wildtype and Mutant n_400"
+    title = "Heatmap: Evolutionary Rescue vs Fecundity of Wildtype and Mutant n_200"
   ) +
   theme_minimal(base_size = 13)
 
 ####mutation rate vs mutation hatching rate##
-
-# Load required library
-library(ggplot2)
-
-# Define parameter ranges
-f_w_values <- seq(1, 10, by = 0.5)   
-f_m_values <- seq(1, 10, by = 0.5)
-
-num_rounds <- 400
-max_gen <- 200      
-
-# Data storage
-results_matrix <- expand.grid(f_w = f_w_values, f_m = f_m_values)
-results_matrix$prob_rescue <- NA
-
-# Loop through each parameter combination
-for (i in 1:nrow(results_matrix)) {
-  f_w <- results_matrix$f_w[i]
-  f_m <- results_matrix$f_m[i]
-  
-  rescue_count <- 0
-  
-  for (rep in 1:num_rounds) {
-    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50,
-                        f_w = f_w, f_m = f_m,
-                        hZ_w = 0.5, hZ_m = 0.5,
-                        pZ_w = 0.5, pZ_m = 0.5,
-                        mut_rate = 0.001, t_max = max_gen)
-    
-    total_pop <- sum(tail(sim, 1))
-    if (total_pop > 0) rescue_count <- rescue_count + 1
-  }
-  
-  # Calculate rescue probability
-  results_matrix$prob_rescue[i] <- rescue_count / num_rounds * 100
-}
-
-# --- PLOT: Heatmap of Rescue Probability ---
-ggplot(results_matrix, aes(x = f_w, y = f_m, fill = prob_rescue)) +
-  geom_tile(color = "white") +
-  scale_fill_viridis_c(name = "Rescue Probability (%)") +
-  labs(
-    x = "Wildtype fecundity (f_w)",
-    y = "Mutant fecundity (f_m)",
-    title = "Heatmap: Evolutionary Rescue vs Fecundity of Wildtype and Mutant n_400"
-  ) +
-  theme_minimal(base_size = 13)
-
 
