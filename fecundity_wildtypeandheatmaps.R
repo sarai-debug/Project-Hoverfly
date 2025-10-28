@@ -160,3 +160,71 @@ ggplot(results_matrix, aes(x = f_w, y = f_m, fill = prob_rescue)) +
 
 ####mutation rate vs mutation hatching rate##
 
+library(ggplot2)
+library(viridis)
+library(gridExtra)
+
+set.seed(2025)
+
+#parameters 
+mut_rates <- 10^seq(-6, -2, length.out = 6)   
+hZ_m_values <- seq(0, 1, by = 0.1)    
+
+num_rounds <- 200 
+max_gen <- 200      
+
+# Fixed parameters but we can adjust it if we want
+Z_init_w <- 100
+Z_init_m <- 50
+f_w <- 3
+f_m <- 3
+hZ_w <- 0.5
+pZ_w <- 0.5
+pZ_m <- 0.5
+
+#result
+grid <- expand.grid(mut_rate = mut_rates, hZ_m = hZ_m_values)
+grid$prob_rescue <- NA_real_
+
+#simulation loop
+for (row in seq_len(nrow(grid))) {
+  mr <- grid$mut_rate[row]
+  hZm <- grid$hZ_m[row]
+  
+  rescue_count <- 0
+  
+  for (rep in 1:num_rounds) {
+    sim <- simulate_pop(
+      Z_init_w = Z_init_w, Z_init_m = Z_init_m,
+      f_w = f_w, f_m = f_m,
+      hZ_w = hZ_w, hZ_m = hZm,
+      pZ_w = pZ_w, pZ_m = pZ_m,
+      mut_rate = mr, t_max = max_gen
+    )
+    
+    final_total <- sum(tail(sim, 1))
+    
+    if (final_total > 0) {
+      rescue_count <- rescue_count + 1
+    }
+  }
+  
+  grid$prob_rescue[row] <- rescue_count / num_rounds * 100
+  
+  ##print
+  if (row %% 5 == 0) cat("Completed", row, "of", nrow(grid), "\n")
+}
+
+#plot of the heatmap
+grid$log10_mut <- log10(grid$mut_rate)
+
+ggplot(grid, aes(x = log10_mut, y = hZ_m, fill = prob_rescue)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(option = "C", name = "Rescue probability (%)") +
+  scale_x_continuous(breaks = log10(mut_rates), labels = formatC(mut_rates, format = "e", digits = 0)) +
+  labs(
+    x = "Mutation rate (mut_rate)",
+    y = "Mutant hatching rate (hZ_m)",
+    title = "Evolutionary Rescue Probability"
+  ) +
+  theme_minimal(base_size = 13)
