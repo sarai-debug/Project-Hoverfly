@@ -90,9 +90,9 @@ for (i in 1:nrow(results_matrix)) {
   
   for (rep in 1:num_rounds) {
     sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50,
-                        f_w = 3, f_m = f_m,
+                        f_w = 2, f_m = f_m,
                         hZ_w = 0.5, hZ_m = hZ_m,
-                        pZ_w = 0.5, pZ_m = 0.5,
+                        pZ_w = 0.4, pZ_m = 0.55,
                         mut_rate = 0.001, t_max = max_gen)
     total_pop <- sum(tail(sim, 1))
     if (total_pop > 0) rescue_count <- rescue_count + 1
@@ -135,8 +135,8 @@ for (i in 1:nrow(results_matrix)) {
   for (rep in 1:num_rounds) {
     sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50,
                         f_w = f_w, f_m = f_m,
-                        hZ_w = 0.5, hZ_m = 0.5,
-                        pZ_w = 0.5, pZ_m = 0.5,
+                        hZ_w = 0.5, hZ_m = 0.55,
+                        pZ_w = 0.4, pZ_m = 0.55,
                         mut_rate = 0.001, t_max = max_gen)
     
     total_pop <- sum(tail(sim, 1))
@@ -228,3 +228,4 @@ ggplot(grid, aes(x = log10_mut, y = hZ_m, fill = prob_rescue)) +
     title = "Evolutionary Rescue Probability"
   ) +
   theme_minimal(base_size = 13)
+
