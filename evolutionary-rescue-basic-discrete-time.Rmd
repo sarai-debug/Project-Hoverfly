@@ -170,7 +170,9 @@ for (i in 1:num_rounds) {
 prob_rescue
 ```
 
-# Rescue probability with varying mutation rates
+# Results 
+
+## Rescue probability with varying mutation rates
 
 ```{r}
 num_rounds <- 400
@@ -229,82 +231,339 @@ mut_rates <- seq(0, 0.02, by = 0.005)
          ylab='Rescue probability (%)',
          main='Evolutionary Rescue vs Mutation Rate')
     
-    # frequency plot against mutation rate
-    
-    plot(freq_df$mutation_rate, freq_df$mutant, type='p',  
-         col='darkgreen', pch=21, xlab='Mutation rate', 
-         ylab='Frequency of Mutant at End of Simulation',
-         main='Frequency at Rescue vs Mutation Rate')
-    
-    # boxplot for frequency and mutation rate
-    boxplot(mutant ~ mutation_rate,
-        data = freq_df,
-        col = "darkgreen",
-        border = "black",
-        xlab = "Mutation rate",
-        ylab = "Frequency of Mutant at End of Simulation",
-        main = "Frequency at Rescue vs Mutation Rate")
-    
 ```
 
 --\> maybe other parameters bc of different life stages
 
-## A small analysis
-
-As you can see if you simulate and plot the output several times, there is a lot of stochasticity/variation in the outcome. Therefore, to get interpretable results, we have to run the simulation many times and summarize the outcome depending on the question of our study. Here I am showing an example in which we record the time and the value of the lowest population size (or the time of extinction, if the population size eventually goes to 0). Usually, we want to study this for a range of model parameters; here I am varying the decay rate and the selection coefficient. Other (maybe more interesting) features to study would be the following:
-
--   rescue probability dependent on initial frequency and selection coefficient
--   time at which the rescue mutation occurs first if it rescues, vs. if it doesn't rescue, dependent on initial population size and mutation rate
--   time until the population has recovered in case it becomes rescued, dependent on mutation rate and selection coefficient
--   ...
+## Rescue probability with varying wildtype fecundity 
 
 ```{r}
-# set some parameters to fixed values
-init_a <- 100
-init_A <- 0
-m_rate <- 0.001
-max_gen <- 1000
-# determine how often to run the simulation for each set of parameters
-no_replicates <- 100
+num_rounds <- 400
+inita_pop <- 1000 + 50
+max_gen <- 200
 
-# set parameters to vary
-s_values <- c(0.2,0.3,0.4)
-r_values <- c(0.05,0.1,0.15)
+# Range of wildtype fecundity to explore
+f_w_values <- seq(1, 6, by = 0.5)   # can adjust based on realistic values
 
-# initialize data table - where to collect the results
-data_table <- c()
-# run the simulation across all chosen parameters
-# loop over decay rates
-for(rval in r_values){
-  # loop over selection coefficients
-  for(sval in s_values){
-    # different way of running many simulations: make replicates using "repeat" function with a counter i
-    # reset counter
-    i<-1
-    repeat {
-      # increase counter by one
-      i<-i+1
-      # run the simulation once
-      one_run <- simulate_pop(init_a,init_A,rval,sval,m_rate,max_gen)
-      # determine total population sizes
-      total_size <- one_run[,1]+one_run[,2]
-      # determine minimum population size
-      min_size <- min(total_size)
-      # determine (first) generation at which this population size occurred
-      min_gen <- as.numeric(which(total_size==min_size)[1])
-      # enter the data into the table
-      data_table <- rbind(data_table,c(rval,sval,min_gen,min_size)) # note that we add the varying parameters (decay rate and selection coefficient) to the table too
-      # stop the repeated computation after no_replicates times
-      if(i>no_replicates) break
+# Create result containers
+results <- data.frame(f_w = numeric(), prob_rescue = numeric(), prob_extinct = numeric())
+freq_df <- data.frame(array(NA, dim = c(0, 3), dimnames = list(c(), c("f_w", "wildtype", "mutant"))))
+
+# Sweep over wildtype fecundity values
+for (f_w in f_w_values) {
+  
+  extinct_count <- 0
+  rescue_count <- 0
+  
+  for (i in 1:num_rounds) {
+    
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, 
+                        f_w = f_w, f_m = 2,        # << varying wildtype fecundity
+                        hZ_w = 0.5, hZ_m = 0.5, 
+                        pZ_w = 0.5, pZ_m = 0.5, 
+                        mut_rate = 0.001, t_max = max_gen)
+    
+    total_pop <- sum(tail(sim, 1))
+    
+    if (total_pop == 0) { 
+      extinct_count <- extinct_count + 1
+    } else {
+      rescue_count <- rescue_count + 1
+      freq_df <- rbind(freq_df, c(f_w, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
     }
   }
+  
+  # Store results
+  results <- rbind(results, data.frame(f_w = f_w, 
+                                       prob_rescue = rescue_count/num_rounds * 100, 
+                                       prob_extinct = extinct_count/num_rounds * 100))
 }
-# define column names of data table
-colnames(data_table) <- c("r","s","min_gen","no_min")
-# show the first lines of the output
-print(head(data_table))
+
+# Label the frequency data frame
+colnames(freq_df) <- c("f_w", "wildtype", "mutant")
+
+# --- Plot 1: Rescue probability vs wildtype fecundity ---
+plot(results$f_w, results$prob_rescue, type = 'b',
+     col = 'darkgreen', pch = 21,
+     xlab = 'Wildtype adult fecundity (f_w)',
+     ylab = 'Rescue probability (%)',
+     main = 'Evolutionary Rescue vs Wildtype Fecundity')
+
+
 ```
 
-## Next steps
 
-So, where do you go from here? Of course you won't just stare at these tables (at least not forever). Visualization would be a good step to see how the minimum population size varies with the decay rate and the selection coefficient. And you might want to include only the cases in which rescue happens, and also extract the rescue probability in parallel. However, the idea is that you pick a question that you find (more) interesting and implement modified versions of this code to address your question of choice.
+
+## Rescue probability with varying mutant fecundity
+
+```{r}
+num_rounds <- 400
+inita_pop <- 1000 + 50
+max_gen <- 200
+
+# Range of mutant fecundity to explore
+f_m_values <- seq(1, 6, by = 0.5)  # can adjust depending on biological realism
+
+# Create result containers
+results <- data.frame(f_m = numeric(), prob_rescue = numeric(), prob_extinct = numeric())
+freq_df <- data.frame(array(NA, dim = c(0, 3), dimnames = list(c(), c("f_m", "wildtype", "mutant"))))
+
+# Sweep over mutant fecundity values
+for (f_m in f_m_values) {
+  
+  extinct_count <- 0
+  rescue_count <- 0
+  
+  for (i in 1:num_rounds) {
+    
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, 
+                        f_w = 3, f_m = f_m, 
+                        hZ_w = 0.5, hZ_m = 0.5, 
+                        pZ_w = 0.5, pZ_m = 0.5, 
+                        mut_rate = 0.001, t_max = max_gen)
+    
+    total_pop <- sum(tail(sim, 1))
+    
+    if (total_pop == 0) { 
+      extinct_count <- extinct_count + 1
+    } else {
+      rescue_count <- rescue_count + 1
+      freq_df <- rbind(freq_df, c(f_m, sim[nrow(sim), 1]/total_pop, sim[nrow(sim), 2]/total_pop))
+    }
+  }
+  
+  # Store results
+  results <- rbind(results, data.frame(f_m = f_m, 
+                                       prob_rescue = rescue_count/num_rounds * 100, 
+                                       prob_extinct = extinct_count/num_rounds * 100))
+}
+
+# Label the frequency data frame
+colnames(freq_df) <- c("f_m", "wildtype", "mutant")
+
+# Plot 1 — Rescue probability vs mutant fecundity
+plot(results$f_m, results$prob_rescue, type = 'b',
+     col = 'darkgreen', pch = 21,
+     xlab = 'Mutant adult fecundity (f_m)',
+     ylab = 'Rescue probability (%)',
+     main = 'Evolutionary Rescue vs Mutant Fecundity')
+
+```
+
+
+
+## Rescue probability with varying wildtype hatching rate 
+
+```{r}
+num_rounds <- 400
+inita_pop <- 1000+50
+max_gen <- 200
+
+hZ_w_values <- seq(0.1, 0.9 , by = 0.1)
+
+# create result
+results <- data.frame(hZ_w = numeric(), prob_rescue = numeric(), prob_extinct = numeric())
+freq_df <- data.frame(array(NA, dim =c(0,3), dimnames = list(c(), c("hZ_w", "wildtype", "mutant"))))
+
+# sweep over wildtype hatching rate
+for (hZ_w in hZ_w_values) {
+  
+  extinct_count <- 0
+  rescue_count <- 0
+  
+  for (i in 1:num_rounds){
+    
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+                        hZ_w = hZ_w, hZ_m = 0.5, pZ_w = 0.5, pZ_m = 0.5, 
+                        mut_rate = 0.001, t_max = max_gen)
+    
+    total_pop <- sum(tail(sim, 1))
+    
+    if (total_pop == 0){ 
+      extinct_count <- extinct_count + 1
+    } else {
+      rescue_count <- rescue_count + 1
+      freq_df <- rbind(freq_df, c(hZ_w, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
+    }
+  }
+  
+  # store results
+  results <- rbind(results, data.frame(hZ_w = hZ_w, 
+                                       prob_rescue = rescue_count/num_rounds * 100, 
+                                       prob_extinct = extinct_count/num_rounds * 100))
+}
+
+colnames(freq_df) <- c("hZ_w", "wildtype", "mutant")
+
+# plots
+plot(results$hZ_w, results$prob_rescue, type='b',  
+     col='darkgreen', pch=21, xlab='Wildtype hatching rate', 
+     ylab='Rescue probability (%)',
+     main='Evolutionary Rescue vs Wildtype hatching Rate')
+
+```
+
+
+## Rescue probability with varying mutant hatching rate
+
+```{r}
+num_rounds <- 400
+inita_pop <- 1000+50
+max_gen <- 200
+
+hZ_m_values <- seq(0, 1 , by = 0.1)
+
+
+# creating a data frame to keep all output
+
+results <- data.frame(hZ_m = numeric(), prob_rescue = numeric(), prob_extinct = numeric())
+freq_df <- data.frame(array(NA, dim =c(0,3), dimnames = list(c(), c("hZ_m", "wildtype", "mutant"))))
+
+
+# for (i in 1:num_rounds)   
+for (hZ_m in hZ_m_values) {
+  
+  extinct_count <- 0
+  rescue_count <- 0
+  
+  for (i in 1:num_rounds){
+    
+    
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50, f_w = 3, f_m = 3, 
+                        hZ_w = 0.3, hZ_m = hZ_m, pZ_w = 0.5, pZ_m = 0.5, 
+                        mut_rate = 0.001, t_max = max_gen)
+    
+    # total_pop <- round_gen[dim(round_gen)[1],1] + round_gen[dim(round_gen)[1],2]
+    total_pop <- sum(tail(sim, 1))
+    
+    
+    if (total_pop == 0){ 
+      extinct_count <- extinct_count + 1
+      
+      # if (total_pop > inita_pop)
+    }
+    else{
+      rescue_count <- rescue_count + 1
+      freq_df <- rbind(freq_df, c(hZ_m, sim[nrow(sim),1]/total_pop, sim[nrow(sim),2]/total_pop))
+    }
+  }
+  
+  # result for each mutation rate
+  results <- rbind(results, data.frame(hZ_m = hZ_m, 
+                                       prob_rescue = rescue_count/num_rounds * 100, 
+                                       prob_extinct = extinct_count/num_rounds * 100))
+}
+print(results)
+
+  colnames(freq_df) <- c("hZ_m", "wildtype", "mutant")
+  print(head(freq_df))
+
+# plot for rescue probability
+
+plot(results$hZ_m, results$prob_rescue, type='b',  
+     col='darkgreen', pch=21, xlab='Mutant hatching rate', 
+     ylab='Rescue probability (%)',
+     main='Evolutionary Rescue vs Mutant hatching Rate hZ_w=0.4')
+
+```
+
+
+## Heatmaps 
+
+### mutant hatching rate vs mutant fecundity
+
+```{r}
+library(ggplot2)
+
+# ranges for the parameters
+hZ_m_values <- seq(0, 0.9, by = 0.1)
+f_m_values <- seq(0, 10, by = 0.5)
+
+num_rounds <- 400
+max_gen <- 200
+
+results_matrix <- expand.grid(hZ_m = hZ_m_values, f_m = f_m_values)
+results_matrix$prob_rescue <- NA
+
+for (i in 1:nrow(results_matrix)) {
+  hZ_m <- results_matrix$hZ_m[i]
+  f_m <- results_matrix$f_m[i]
+  
+  rescue_count <- 0
+  
+  for (rep in 1:num_rounds) {
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50,
+                        f_w = 2, f_m = f_m,
+                        hZ_w = 0.5, hZ_m = hZ_m,
+                        pZ_w = 0.4, pZ_m = 0.55,
+                        mut_rate = 0.001, t_max = max_gen)
+    total_pop <- sum(tail(sim, 1))
+    if (total_pop > 0) rescue_count <- rescue_count + 1
+  }
+  
+  results_matrix$prob_rescue[i] <- rescue_count / num_rounds * 100
+}
+
+# plot heatmap
+ggplot(results_matrix, aes(x = f_m, y = hZ_m, fill = prob_rescue)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(name = "Rescue Probability (%)") +
+  labs(x = "Mutant fecundity (f_m)", y = "Mutant hatching rate (hZ_m)",
+       title = "Heatmap: Evolutionary Rescue Probability n_400") +
+  theme_minimal()
+
+```
+
+
+### mutant fecundity vs wildtype fecundity
+
+```{r}
+
+# Load required library
+library(ggplot2)
+
+# Define parameter ranges
+f_w_values <- seq(0, 5, by = 0.1)   
+f_m_values <- seq(0, 5, by = 0.1)   
+
+num_rounds <- 200   
+max_gen <- 200       
+
+# Data storage
+results_matrix <- expand.grid(f_w = f_w_values, f_m = f_m_values)
+results_matrix$prob_rescue <- NA
+
+# Loop through each parameter combination
+for (i in 1:nrow(results_matrix)) {
+  f_w <- results_matrix$f_w[i]
+  f_m <- results_matrix$f_m[i]
+  
+  rescue_count <- 0
+  
+  for (rep in 1:num_rounds) {
+    sim <- simulate_pop(Z_init_w = 100, Z_init_m = 50,
+                        f_w = f_w, f_m = f_m,
+                        hZ_w = 0.5, hZ_m = 0.55,
+                        pZ_w = 0.4, pZ_m = 0.55,
+                        mut_rate = 0.001, t_max = max_gen)
+    
+    total_pop <- sum(tail(sim, 1))
+    if (total_pop > 0) rescue_count <- rescue_count + 1
+  }
+  
+  # Calculate rescue probability
+  results_matrix$prob_rescue[i] <- rescue_count / num_rounds * 100
+}
+
+# --- PLOT: Heatmap of Rescue Probability ---
+ggplot(results_matrix, aes(x = f_w, y = f_m, fill = prob_rescue)) +
+  geom_tile(color = "white") +
+  scale_fill_viridis_c(name = "Rescue Probability (%)") +
+  labs(
+    x = "Wildtype fecundity (f_w)",
+    y = "Mutant fecundity (f_m)",
+    title = "Heatmap: Evolutionary Rescue vs Fecundity of Wildtype and Mutant n_200"
+  ) +
+  theme_minimal(base_size = 13)
+
+```
