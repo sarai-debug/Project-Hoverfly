@@ -1,4 +1,4 @@
-# Evolutionary rescue under temperature stress: the role of mutations improving life-history traits in hoverflies, a species with multiple life stages by Sarai and Charith
+# Evolutionary rescue under temperature stress: the role of mutations improving life-history traits in hoverflies, a species with multiple life stages 
 
 Theoretical Ecology Practical 2025
 
